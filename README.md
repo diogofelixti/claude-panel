@@ -4,7 +4,11 @@ A custom status line for [Claude Code](https://claude.com/claude-code) that disp
 
 ## Screenshot
 
-![Status Line Screenshot](screenshot.png)
+![Status line — Opus 4.8 with a 1M context window and light usage, extra spend shown in R$](screenshot.png)
+
+![Status line — Sonnet 4.6 at higher usage, with the 5h/7d progress bars near full](screenshot2.png)
+
+![Status line — the same data rendered in a different terminal color scheme](screenshot3.png)
 
 ## What it shows
 
