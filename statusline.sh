@@ -371,6 +371,42 @@ format_reset_time() {
 
 sep=" ${dim}|${reset} "
 
+# Draw a 10-char progress bar (█ filled, ░ empty) colored by usage percentage.
+# Each cell represents 10%. Echoes the colored bar; capture via $(make_bar <pct>).
+make_bar() {
+    local pct=$1
+    local color filled i bar=""
+    color=$(usage_color "$pct")
+    filled=$(( pct * 10 / 100 ))
+    [ "$filled" -gt 10 ] && filled=10
+    [ "$filled" -lt 0 ] && filled=0
+    for (( i=0; i<10; i++ )); do
+        if [ "$i" -lt "$filled" ]; then bar+="█"; else bar+="░"; fi
+    done
+    echo "${color}${bar}${reset}"
+}
+
+# Format the time remaining until a future epoch as "Xh Ym" (or "Ym" when under 1h).
+# Echoes "agora" when the reset is already in the past. Usage: time_until <epoch>
+time_until() {
+    local target=$1
+    { [ -z "$target" ] || [ "$target" = "null" ]; } && return
+    local now diff h m
+    now=$(date +%s)
+    diff=$(( target - now ))
+    if [ "$diff" -le 0 ]; then
+        echo "agora"
+        return
+    fi
+    h=$(( diff / 3600 ))
+    m=$(( (diff % 3600) / 60 ))
+    if [ "$h" -gt 0 ]; then
+        echo "em ${h}h ${m}m"
+    else
+        echo "em ${m}m"
+    fi
+}
+
 # Render extra_usage segment from API usage data (not available via stdin rate_limits).
 # Appends to the global $out. No-op when data is missing or is_enabled is false.
 render_extra_usage() {
@@ -388,7 +424,7 @@ render_extra_usage() {
     if [ -n "$used" ] && [ -n "$limit" ] && [[ "$used" != *'$'* ]] && [[ "$limit" != *'$'* ]]; then
         local color
         color=$(usage_color "$pct")
-        out+="${sep}${white}extra${reset} ${color}\$${used}/\$${limit}${reset}"
+        out+="${sep}${white}extra${reset} ${color}R\$${used}/R\$${limit} (${pct}%)${reset}"
     else
         out+="${sep}${white}extra${reset} ${green}enabled${reset}"
     fi
@@ -400,20 +436,24 @@ if $effective_builtin; then
     if [ -n "$builtin_five_hour_pct" ]; then
         five_hour_pct=$(printf "%.0f" "$builtin_five_hour_pct")
         five_hour_color=$(usage_color "$five_hour_pct")
-        out+="${sep}${white}5h${reset} ${five_hour_color}${five_hour_pct}%${reset}"
+        out+="${sep}${white}5h${reset} $(make_bar "$five_hour_pct") ${five_hour_color}${five_hour_pct}%${reset}"
         if [ -n "$builtin_five_hour_reset" ] && [ "$builtin_five_hour_reset" != "null" ]; then
             five_hour_reset=$(date -j -r "$builtin_five_hour_reset" +"%H:%M" 2>/dev/null || date -d "@$builtin_five_hour_reset" +"%H:%M" 2>/dev/null)
             [ -n "$five_hour_reset" ] && out+=" ${dim}@${five_hour_reset}${reset}"
+            five_hour_left=$(time_until "$builtin_five_hour_reset")
+            [ -n "$five_hour_left" ] && out+=" ${dim}(${five_hour_left})${reset}"
         fi
     fi
 
     if [ -n "$builtin_seven_day_pct" ]; then
         seven_day_pct=$(printf "%.0f" "$builtin_seven_day_pct")
         seven_day_color=$(usage_color "$seven_day_pct")
-        out+="${sep}${white}7d${reset} ${seven_day_color}${seven_day_pct}%${reset}"
+        out+="${sep}${white}7d${reset} $(make_bar "$seven_day_pct") ${seven_day_color}${seven_day_pct}%${reset}"
         if [ -n "$builtin_seven_day_reset" ] && [ "$builtin_seven_day_reset" != "null" ]; then
             seven_day_reset=$(date -j -r "$builtin_seven_day_reset" +"%a %b %-d, %H:%M" 2>/dev/null || date -d "@$builtin_seven_day_reset" +"%a %b %-d, %H:%M" 2>/dev/null)
             [ -n "$seven_day_reset" ] && out+=" ${dim}@${seven_day_reset}${reset}"
+            seven_day_left=$(time_until "$builtin_seven_day_reset")
+            [ -n "$seven_day_left" ] && out+=" ${dim}(${seven_day_left})${reset}"
         fi
     fi
 
@@ -449,8 +489,10 @@ elif [ -n "$usage_data" ] && echo "$usage_data" | jq -e '.five_hour' >/dev/null 
     five_hour_reset=$(format_reset_time "$five_hour_reset_iso" "time")
     five_hour_color=$(usage_color "$five_hour_pct")
 
-    out+="${sep}${white}5h${reset} ${five_hour_color}${five_hour_pct}%${reset}"
+    out+="${sep}${white}5h${reset} $(make_bar "$five_hour_pct") ${five_hour_color}${five_hour_pct}%${reset}"
     [ -n "$five_hour_reset" ] && out+=" ${dim}@${five_hour_reset}${reset}"
+    five_hour_left=$(time_until "$(iso_to_epoch "$five_hour_reset_iso")")
+    [ -n "$five_hour_left" ] && out+=" ${dim}(${five_hour_left})${reset}"
 
     # ---- 7-day (weekly) ----
     seven_day_pct=$(echo "$usage_data" | jq -r '.seven_day.utilization // 0' | awk '{printf "%.0f", $1}')
@@ -458,8 +500,10 @@ elif [ -n "$usage_data" ] && echo "$usage_data" | jq -e '.five_hour' >/dev/null 
     seven_day_reset=$(format_reset_time "$seven_day_reset_iso" "datetime")
     seven_day_color=$(usage_color "$seven_day_pct")
 
-    out+="${sep}${white}7d${reset} ${seven_day_color}${seven_day_pct}%${reset}"
+    out+="${sep}${white}7d${reset} $(make_bar "$seven_day_pct") ${seven_day_color}${seven_day_pct}%${reset}"
     [ -n "$seven_day_reset" ] && out+=" ${dim}@${seven_day_reset}${reset}"
+    seven_day_left=$(time_until "$(iso_to_epoch "$seven_day_reset_iso")")
+    [ -n "$seven_day_left" ] && out+=" ${dim}(${seven_day_left})${reset}"
 
     render_extra_usage "$usage_data"
 else
