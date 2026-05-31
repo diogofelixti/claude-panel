@@ -1,6 +1,6 @@
-# Claude Code Status Line
+# claude-panel
 
-A custom status line for [Claude Code](https://claude.com/claude-code) that displays model info, token usage, rate limits, and reset times in a single compact line. It runs as an external shell command, so it does not slow down Claude Code or consume any extra tokens.
+A custom status line for [Claude Code](https://claude.com/claude-code) that displays model info, token usage, rate limits, reset times, and reset countdowns in a single compact line — with usage progress bars and extra-usage spending shown in R$. It runs as an external shell command, so it does not slow down Claude Code or consume any extra tokens.
 
 ## Screenshot
 
@@ -14,9 +14,9 @@ A custom status line for [Claude Code](https://claude.com/claude-code) that disp
 | **CWD@Branch** | Current folder name, git branch, and file changes (+/-) |
 | **Tokens** | Used / total context window tokens (% used) |
 | **Effort** | Reasoning effort level (low, med, high, xhigh) |
-| **5h** | 5-hour rate limit usage percentage and reset time |
-| **7d** | 7-day rate limit usage percentage and reset time |
-| **Extra** | Extra usage credits spent / limit (if enabled) |
+| **5h** | 5-hour rate limit usage percentage, progress bar, reset time, and countdown |
+| **7d** | 7-day rate limit usage percentage, progress bar, reset time, and countdown |
+| **Extra** | Extra usage spent / limit in R$ (if enabled) |
 | **Update** | Appears when a new version is available (checked every 24h) |
 
 Usage percentages are color-coded: green (<50%) → yellow (≥50%) → orange (≥70%) → red (≥90%).
@@ -25,7 +25,7 @@ Usage percentages are color-coded: green (<50%) → yellow (≥50%) → orange (
 
 Ask Claude Code:
 
-> Clone https://github.com/daniel3303/ClaudeCodeStatusLine to `~/.claude/statusline/` (or `%USERPROFILE%\.claude\statusline\` on Windows) and configure it as my status bar by following its INSTALL.md.
+> Clone https://github.com/diogofelixti/claude-panel to `~/.claude/statusline/` (or `%USERPROFILE%\.claude\statusline\` on Windows) and configure it as my status bar by following its INSTALL.md.
 
 Claude will clone the repo to that path, pick the right script for your OS, and update `settings.json`. Full step-by-step instructions Claude follows live in [INSTALL.md](INSTALL.md).
 
